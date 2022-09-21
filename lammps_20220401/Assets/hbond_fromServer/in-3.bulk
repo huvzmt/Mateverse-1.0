@@ -1,0 +1,93 @@
+# Reference: M. Orsi, Comparative assessment of the ELBA coarse-grained 
+# model for water, Molecular Physics (2014), 112, 1566-1576
+
+units real
+atom_style full
+read_data data.singleTIP4P-2005
+
+mass 1 1.00794 # H
+mass 2 15.9994 # O
+
+pair_style hybrid/overlay lj/cut/coul/long 9.9505 hbond/dreiding/lj 8 4 7.5 165
+pair_coeff 1 1 lj/cut/coul/long 0 0
+pair_coeff 1 2 lj/cut/coul/long 0 0
+pair_coeff 2 2 lj/cut/coul/long 0.1729914 3.118
+pair_coeff 2 2 hbond/dreiding/lj 1 i 0.2005116 3.1
+kspace_style pppm 1.0e-5
+
+set type 1 charge 0.5564
+set type 2 charge -1.1128
+
+bond_style  harmonic
+bond_coeff  1 450 0.9572
+angle_style harmonic
+angle_coeff 1 55 104.52
+
+replicate	5 5 5
+
+variable Nrun equal 5000
+variable Nf equal ${Nrun}/100
+variable Ne equal 10
+variable Nr equal ${Nf}/${Ne}
+variable Ndump equal ${Nrun}/200
+variable Nr_rdf equal 0.5*${Nrun}/${Ne}
+
+variable watMoleMass equal 18.0153 # /(g/mol)
+variable nAvog equal 6.0221415e23 # Avogadro's number
+variable watMoleculeMass equal (${watMoleMass}/${nAvog}) # /(g/molecule)
+variable A3_in_cm3 equal 1e-24 # Angstrom^3 in cm^3
+variable nAtoms equal atoms
+variable nMolecules equal v_nAtoms/3
+
+variable Tini equal 200
+variable Tfin equal 290
+variable Pext equal 1.0
+
+group hydrogen type 1
+group oxygen type 2
+
+neighbor 2.0 bin
+neigh_modify every 1 delay 0 check yes
+
+timestep 1
+
+fix 1 all npt temp ${Tini} ${Tini} 100.0 iso ${Pext} ${Pext} 1000.0
+
+velocity all create ${Tini} 1234
+
+minimize 1.0e-4 1.0e-4 100000 100000
+unfix 1
+
+fix constrain all shake 1.0e-4 100 0 b 1 a 1
+fix integrate all npt temp ${Tini} ${Tfin} 100.0 iso ${Pext} ${Pext} 1000.0
+fix removeMomentum all momentum 1 linear 1 1 1
+
+variable Dens equal v_nMolecules*${watMoleculeMass}/(vol*${A3_in_cm3})
+fix DensAve all ave/time ${Ne} ${Nr} ${Nf} v_Dens file test.dens
+
+#compute Ep	all pe
+#compute Ek	all ke
+#compute T	all temp
+#variable Cv equal c_Ek/c_T*(${nMolecules}/${nAvog})/(${nMolecules}*${watMoleculeMass})
+#fix CvAve all ave/time ${Ne} ${Nr} ${Nf} v_Cv file test.cv mode scalar
+
+variable Etot equal etotal
+variable T equal temp
+variable V equal vol
+fix output all ave/time ${Ne} ${Nr} ${Nf} v_Etot v_T v_V file test.out
+
+#compute	msd oxygen msd com yes
+#fix msd oxygen ave/time 1 1 500 c_msd[4] file test.msd
+
+compute vac all vacf
+dump 1 all custom 1 vacf_3.lammpstrj id type vx vy vz
+dump_modify 1 sort id
+
+#thermo_style custom step temp f_TempAve press f_PressAve f_PEAve_Mol f_DensAve 
+#thermo_style custom step temp etotal enthalpy density v_diff
+thermo_modify flush yes
+thermo ${Nf}
+
+dump trj all atom ${Ndump} test_3.lammpstrj
+
+run ${Nrun}

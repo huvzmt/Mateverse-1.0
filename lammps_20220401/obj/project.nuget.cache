@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "24gY4FPVN2KDCeo+tyx4p9Lf58KiepB+fUkj6e0526Z5nc2pFULHNOzHcy8b6dbQiRDXx7xnuO7WT3OhC7U4Ng==",
+  "success": true,
+  "projectFilePath": "C:\\Users\\116010058\\Desktop\\lammps\\Assembly-CSharp-Editor.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\116010058\\.nuget\\packages\\ssh.net\\2020.0.1\\ssh.net.2020.0.1.nupkg.sha512"
+  ],
+  "logs": []
+}

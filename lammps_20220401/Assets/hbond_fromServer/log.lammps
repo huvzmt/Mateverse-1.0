@@ -1,0 +1,121 @@
+LAMMPS (29 Sep 2021 - Update 2)
+OMP_NUM_THREADS environment is not set. Defaulting to 1 thread. (src/comm.cpp:98)
+  using 1 OpenMP thread(s) per MPI task
+# Reference: M. Orsi, Comparative assessment of the ELBA coarse-grained
+# model for water, Molecular Physics (2014), 112, 1566-1576
+
+units real
+atom_style full
+read_data data.singleTIP4P-2005
+Reading data file ...
+  orthogonal box = (0.0000000 0.0000000 0.0000000) to (3.1000000 3.1000000 3.1000000)
+  2 by 2 by 2 MPI processor grid
+  reading atoms ...
+  3 atoms
+  scanning bonds ...
+  2 = max bonds/atom
+  scanning angles ...
+  1 = max angles/atom
+  reading bonds ...
+  2 bonds
+  reading angles ...
+  1 angles
+Finding 1-2 1-3 1-4 neighbors ...
+  special bond factors lj:    0        0        0       
+  special bond factors coul:  0        0        0       
+     2 = max # of 1-2 neighbors
+     1 = max # of 1-3 neighbors
+     1 = max # of 1-4 neighbors
+     2 = max # of special neighbors
+  special bonds CPU = 0.000 seconds
+  read_data CPU = 0.007 seconds
+
+mass 1 1.00794 # H
+mass 2 15.9994 # O
+
+pair_style hybrid/overlay lj/cut/coul/long 10 hbond/dreiding/lj 0 0 0 0
+pair_coeff 1 1 lj/cut/coul/long 0 0
+pair_coeff 1 2 lj/cut/coul/long 0 0
+pair_coeff 2 2 lj/cut/coul/long 0.1118 3.118
+pair_coeff 2 2 hbond/dreiding/lj 1 i 0 0
+kspace_style pppm 1.0e-5
+
+set type 1 charge 0
+Setting atom values ...
+  2 settings made for charge
+set type 2 charge 0
+Setting atom values ...
+  1 settings made for charge
+
+bond_style  harmonic
+bond_coeff  1 450 0.9572
+angle_style harmonic
+angle_coeff 1 55 104.52
+
+replicate	5 5 5
+Replicating atoms ...
+  orthogonal box = (0.0000000 0.0000000 0.0000000) to (15.500000 15.500000 15.500000)
+  2 by 2 by 2 MPI processor grid
+  375 atoms
+  250 bonds
+  125 angles
+Finding 1-2 1-3 1-4 neighbors ...
+  special bond factors lj:    0        0        0       
+  special bond factors coul:  0        0        0       
+     2 = max # of 1-2 neighbors
+     1 = max # of 1-3 neighbors
+     1 = max # of 1-4 neighbors
+     2 = max # of special neighbors
+  special bonds CPU = 0.001 seconds
+  replicate CPU = 0.006 seconds
+
+variable Nrun equal 5000
+variable Nf equal ${Nrun}/100
+variable Nf equal 5000/100
+variable Ne equal 10
+variable Nr equal ${Nf}/${Ne}
+variable Nr equal 50/${Ne}
+variable Nr equal 50/10
+variable Ndump equal ${Nrun}/200
+variable Ndump equal 5000/200
+variable Nr_rdf equal 0.5*${Nrun}/${Ne}
+variable Nr_rdf equal 0.5*5000/${Ne}
+variable Nr_rdf equal 0.5*5000/10
+
+variable watMoleMass equal 18.0153 # /(g/mol)
+variable nAvog equal 6.0221415e23 # Avogadro's number
+variable watMoleculeMass equal (${watMoleMass}/${nAvog}) # /(g/molecule)
+variable watMoleculeMass equal (18.0153/${nAvog}) 
+variable watMoleculeMass equal (18.0153/6.0221415e+23) 
+variable A3_in_cm3 equal 1e-24 # Angstrom^3 in cm^3
+variable nAtoms equal atoms
+variable nMolecules equal v_nAtoms/3
+
+variable Tini equal 200
+variable Tfin equal 290
+variable Pext equal 1.0
+
+group hydrogen type 1
+250 atoms in group hydrogen
+group oxygen type 2
+125 atoms in group oxygen
+
+neighbor 2.0 bin
+neigh_modify every 1 delay 0 check yes
+
+timestep 1
+
+fix 1 all npt temp ${Tini} ${Tini} 100.0 iso ${Pext} ${Pext} 1000.0
+fix 1 all npt temp 200 ${Tini} 100.0 iso ${Pext} ${Pext} 1000.0
+fix 1 all npt temp 200 200 100.0 iso ${Pext} ${Pext} 1000.0
+fix 1 all npt temp 200 200 100.0 iso 1 ${Pext} 1000.0
+fix 1 all npt temp 200 200 100.0 iso 1 1 1000.0
+
+velocity all create ${Tini} 1234
+velocity all create 200 1234
+
+minimize 1.0e-4 1.0e-4 100000 100000
+PPPM initialization ...
+WARNING: Using kspace solver on system with no charge (src/kspace.cpp:312)
+ERROR: Must use kspace_modify gewald for uncharged system (src/KSPACE/pppm.cpp:970)
+Last command: minimize 1.0e-4 1.0e-4 100000 100000

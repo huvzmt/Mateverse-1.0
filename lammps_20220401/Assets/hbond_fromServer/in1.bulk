@@ -1,0 +1,28 @@
+# Reference: M. Orsi, Comparative assessment of the ELBA coarse-grained 
+# model for water, Molecular Physics (2014), 112, 1566-1576
+
+units real
+atom_style full
+read_data data.singleTIP4P-2005
+
+mass 1 1.00794 # H
+mass 2 15.9994 # O
+
+#pair_style hybrid/overlay 
+#pair_style hybrid
+#kspace_style pppm 1.0e-5
+
+set type 1 charge 0.5101365
+set type 2 charge -1.020273
+
+bond_style  harmonic
+bond_coeff  1 450 0.9572
+angle_style harmonic
+angle_coeff 1 55 104.52
+
+replicate	5 5 5
+
+write_data data.1014
+#dump trj all atom 1 test1.lammpstrj
+
+#run 2

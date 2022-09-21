@@ -1,0 +1,33 @@
+# This forcefield file sets a 13-Angstrom cutoff, recommended for liquid-
+# vapor simulations [Vega & de Miguel, J Chem Phys 126:154707 (2007),
+# Vega et al, Faraday Discuss 141:251 (2009)]                         
+# Note that the original TIP4P/2005 model was run with an 8.5 Angstrom 
+# cutoff [Abascal & Vega, J Chem Phys 123:234505 (2005)]. 
+# Charges and geometry are specified in the "data." file.
+
+mass 1 1.00794 # H
+mass 2 15.9994 # O
+
+#pair_style hybrid/overlay lj/cut/coul/long 8.0 hbond/dreiding/lj 4 4 7.5 160
+#pair_coeff 1 1 lj/cut/coul/long 0 0
+#pair_coeff 1 2 lj/cut/coul/long 0 0
+#pair_coeff 2 2 lj/cut/coul/long 0.1852 3.15
+#pair_coeff 2 2 hbond/dreiding/lj 1 i 0.075889 2.75
+#pair_modify tail yes
+#kspace_style pppm 1.0e-5
+
+pair_style lj/cut/tip4p/long 2 1 1 1 0.1546 13.0
+pair_modify tail yes
+kspace_style pppm/tip4p 1.0e-5
+pair_coeff 1 1 0.0 0.0
+pair_coeff 1 2 0.0 0.0	
+pair_coeff 2 2 0.18520 3.1589
+
+set type 1 charge 0.5564
+set type 2 charge -1.1128
+
+bond_style harmonic
+bond_coeff 1 450 3.15
+
+angle_style harmonic
+angle_coeff 1 55 104.52

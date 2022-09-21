@@ -1,0 +1,90 @@
+# Reference: M. Orsi, Comparative assessment of the ELBA coarse-grained 
+# model for water, Molecular Physics (2014), 112, 1566-1576
+
+units real
+atom_style full
+read_data data.singleTIP4P-2005
+
+mass 1 1.00794 # H
+mass 2 15.9994 # O
+
+pair_style lj/cut/coul/long 10.0
+pair_coeff 1 1*2 0.000 0.000 
+pair_coeff 2 2 0.102 3.188
+
+bond_style  harmonic
+bond_coeff  1 450 0.9572
+angle_style harmonic
+angle_coeff 1 55 104.52
+kspace_style pppm 1.0e-5 #final npt relaxation
+
+replicate	5 5 5
+
+variable Nrun equal 50000
+variable Nf equal ${Nrun}/50
+variable Ne equal 10
+variable Nr equal ${Nf}/${Ne}
+variable Ndump equal ${Nrun}/200
+variable Nr_rdf equal 0.5*${Nrun}/${Ne}
+
+variable watMoleMass equal 18.0153 # /(g/mol)
+variable nAvog equal 6.0221415e23 # Avogadro's number
+variable watMoleculeMass equal (${watMoleMass}/${nAvog}) # /(g/molecule)
+variable A3_in_cm3 equal 1e-24 # Angstrom^3 in cm^3
+variable nAtoms equal atoms
+variable nMolecules equal v_nAtoms/3
+
+variable Text equal 298.0
+variable Pext equal 1.0
+
+group hydrogen type 1
+group oxygen type 2
+
+velocity all create ${Text} 1234
+
+neighbor 2.0 bin
+neigh_modify every 1 delay 0 check yes
+
+timestep 0.2
+
+fix constrain all shake 1.0e-4 100 0 b 1 a 1
+fix integrate all npt temp ${Text} ${Text} 100.0 iso ${Pext} ${Pext} 1000.0
+fix removeMomentum all momentum 1 linear 1 1 1
+
+#compute T all temp
+#fix TempAve all ave/time ${Ne} ${Nr} ${Nf} c_T 
+
+#variable P equal press
+#fix PressAve all ave/time ${Ne} ${Nr} ${Nf} v_P
+
+#compute PE all pe pair kspace
+#variable PE_Mol equal c_PE/v_nMolecules
+#fix PEAve_Mol all ave/time ${Ne} ${Nr} ${Nf} v_PE_Mol
+
+variable Dens equal v_nMolecules*${watMoleculeMass}/(vol*${A3_in_cm3})
+fix DensAve all ave/time ${Ne} ${Nr} ${Nf} v_Dens file wat_dens.TIP3P
+
+compute Ep	all pe
+compute Ek	all ke
+compute T	all temp
+variable Cv equal c_Ek/c_T*(${nMolecules}/${nAvog})/(${nMolecules}*${watMoleculeMass})
+fix CvAve all ave/time ${Ne} ${Nr} ${Nf} v_Cv file wat_hbond.cv mode scalar
+
+compute	msd oxygen msd com yes
+fix msd oxygen ave/time 1 1 500 c_msd[4] file wat.msd
+
+#compute rdf all rdf 1000 2 2 # oxygen-oxygen
+#fix rdf all ave/time ${Ne} ${Nr_rdf} ${Nrun} c_rdf file wat.rdf mode vector
+
+#fix 1 all phonon 25 20 5000 GAMMA EAM0D nasr 100
+
+#thermo_style custom step temp f_TempAve press f_PressAve f_PEAve_Mol f_DensAve 
+thermo_style custom step temp density
+thermo_modify flush yes
+thermo ${Nf}
+
+dump trj all atom ${Ndump} wat_TIP3P.lammpstrj
+
+run ${Nrun}
+
+#write_restart restart.wat
